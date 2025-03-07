@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react";
-
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 export default function Home() {
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant', content: string }>>([]);
   const [input, setInput] = useState('');
@@ -17,9 +17,14 @@ export default function Home() {
   return (
     <div className="flex flex-col h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <h1 className="text-xl font-semibold text-gray-800 dark:text-white">AnonSkill Chat</h1>
+      <div className="bg-white dark:bg-gray-800 shadow-sm flex justify-around">
+        <div className="max-w-4xl mx-auto px-4 py-4 flex justify-around">
+          <h1 className="text-xl font-semibold text-gray-800 dark:text-white">
+            AnonSkill Chat
+          </h1>
+        </div>
+        <div>
+          <ConnectButton />
         </div>
       </div>
 
@@ -30,25 +35,31 @@ export default function Home() {
             <div className="flex items-center justify-center h-full">
               <div className="text-center text-gray-500 dark:text-gray-400">
                 <p className="text-lg">Welcome to AnonSkill Chat!</p>
-                <p className="text-sm mt-2">Start a conversation by sending a message below.</p>
+                <p className="text-sm mt-2">
+                  Start a conversation by sending a message below.
+                </p>
               </div>
             </div>
           ) : (
             messages.map((message, index) => (
               <div
                 key={index}
-                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                className={`flex ${
+                  message.role === "user" ? "justify-end" : "justify-start"
+                }`}
               >
                 <div
                   className={`max-w-[85%] rounded-2xl px-6 py-3 shadow-sm ${
-                    message.role === 'user'
-                      ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white'
-                      : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-white border border-gray-100 dark:border-gray-700'
+                    message.role === "user"
+                      ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
+                      : "bg-white dark:bg-gray-800 text-gray-800 dark:text-white border border-gray-100 dark:border-gray-700"
                   }`}
                 >
-                  <p className="text-[15px] leading-relaxed">{message.content}</p>
+                  <p className="text-[15px] leading-relaxed">
+                    {message.content}
+                  </p>
                   <span className="text-xs mt-1 block opacity-70">
-                    {message.role === 'user' ? 'You' : 'Assistant'}
+                    {message.role === "user" ? "You" : "Assistant"}
                   </span>
                 </div>
               </div>
