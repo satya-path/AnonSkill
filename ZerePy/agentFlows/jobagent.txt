@@ -1,0 +1,22 @@
+User types start
+|
+v 
+Agent welcomes the user telling him that he can help the user by searching jobs for him based on the keyword he enters. Apart from that, he also shows top trending categories of jobs.
+|
+v
+User goes through the message and enters a prompt. The prompt cam either be a search query or a demand to get some kind of jobs in a specific category. Also, it can be some random stuff.
+|
+v
+Agent analyzes the prompt. In case of search query, it queries and displays first 10 jobs. In case of category, it shows first 10 of particular category. In other case, it asks the user to prompt again and be specific.
+|
+v
+User now asks to give detail of particular job.
+|
+v
+Agent responds back with further details and application link(necessarily)
+|
+v
+User asks for going back to the list
+|
+v
+Agent goes back and process keeps repeating

@@ -11,6 +11,7 @@ from src.action_handler import execute_action
 import src.actions.twitter_actions  
 import src.actions.echochamber_actions
 import src.actions.solana_actions
+import src.actions.openaijob_actions
 from datetime import datetime
 
 REQUIRED_FIELDS = ["name", "bio", "traits", "examples", "loop_delay", "config", "tasks"]
@@ -171,14 +172,21 @@ class ZerePyAgent:
         logger.info("Starting loop in 5 seconds...")
         for i in range(5, 0, -1):
             logger.info(f"{i}...")
-            time.sleep(1)
+            time.sleep(0.1)
 
         try:
             while True:
                 success = False
                 try:
                     # REPLENISH INPUTS
-                    # TODO: Add more inputs to complexify agent behavior
+                    # Initialize job state if needed
+                    if any("job-prompt" in task["name"] for task in self.tasks):
+                        if "is_first_time" not in self.state:
+                            self.state["is_first_time"] = True
+                        if "current_jobs" not in self.state:
+                            self.state["current_jobs"] = []
+
+                    # Handle other state management
                     if "timeline_tweets" not in self.state or self.state["timeline_tweets"] is None or len(self.state["timeline_tweets"]) == 0:
                         if any("tweet" in task["name"] for task in self.tasks):
                             logger.info("\n👀 READING TIMELINE")
@@ -198,10 +206,11 @@ class ZerePyAgent:
                             )
 
                     # CHOOSE AN ACTION
-                    # TODO: Add agentic action selection
-                    
                     action = self.select_action(use_time_based_weights=self.use_time_based_weights)
+                    print(209, action)
                     action_name = action["name"]
+                    print(211, action_name)
+
 
                     # PERFORM ACTION
                     success = execute_action(self, action_name)

@@ -65,6 +65,43 @@ class OpenAIConnection(BaseConnection):
                 name="list-models",
                 parameters=[],
                 description="List all available OpenAI models"
+            ),
+            "parse-input": Action(
+                name="parse-input",
+                parameters=[
+                    ActionParameter("user_input", True, str, "User's input text to classify")
+                ],
+                description="Classify user input into predefined job-related actions"
+            ),
+            "find-jobs": Action(
+                name="find-jobs",
+                parameters=[
+                    ActionParameter("search_query", True, str, "Job search criteria"),
+                    ActionParameter("location", False, str, "Job location preference"),
+                    ActionParameter("job_type", False, str, "Type of job (full-time, part-time, etc)")
+                ],
+                description="Search for jobs based on user criteria using ChatGPT"
+            ),
+            "view-job": Action(
+                name="view-job",
+                parameters=[
+                    ActionParameter("job_id", True, str, "Unique identifier for the job"),
+                    ActionParameter("company", True, str, "Company name")
+                ],
+                description="Fetch detailed information about a specific job"
+            ),
+            "apply-to-job": Action(
+                name="apply-to-job",
+                parameters=[
+                    ActionParameter("job_id", True, str, "Unique identifier for the job"),
+                    ActionParameter("company", True, str, "Company name")
+                ],
+                description="Get the application link for a specific job"
+            ),
+            "show-default-msg": Action(
+                name="show-default-msg",
+                parameters=[],
+                description="Return a default message for invalid inputs"
             )
         }
 
@@ -189,7 +226,153 @@ class OpenAIConnection(BaseConnection):
                     
         except Exception as e:
             raise OpenAIAPIError(f"Listing models failed: {e}")
-    
+
+    def parse_input(self, user_input: str, **kwargs) -> dict:
+        """Classify user input into predefined job-related actions and extract relevant information"""
+        try:
+            # First, determine the action type
+            action_system_prompt = """You are a job search assistant. Classify the user's input into one of these categories:
+            - find_jobs: When user wants to search for jobs
+            - view_job: When user wants to view details of a specific job
+            - apply_to_job: When user wants to apply to a specific job
+            - get_default_msg: When the input doesn't match any of the above
+            Only respond with one of these exact categories, nothing else."""
+
+            action_type = self.generate_text(
+                prompt=user_input,
+                system_prompt=action_system_prompt,
+                model=self.config["model"]
+            ).strip()
+
+            # Based on action type, get additional information
+            if action_type == "find_jobs":
+                refine_system_prompt = """You are a job search assistant. Given the user's job search query, 
+                create a refined, professional search query. Extract location and job type if mentioned.
+                Return a JSON object with these fields:
+                {
+                    "search_query": "refined search terms",
+                    "location": "location if specified, or None",
+                    "job_type": "job type if specified (full-time, part-time, contract, etc), or None"
+                }"""
+                
+                refined_info = self.generate_text(
+                    prompt=user_input,
+                    system_prompt=refine_system_prompt,
+                    model=self.config["model"]
+                )
+                
+                return {
+                    "action": "find_jobs",
+                    "parameters": eval(refined_info)
+                }
+
+            elif action_type in ["view_job", "apply_to_job"]:
+                extract_system_prompt = """You are a job search assistant. From the user's input, extract:
+                1. Job Location (if mentioned)
+                2. Company name (if mentioned)
+                3. Brief job description or title (if mentioned)
+                Return a JSON object with these fields:
+                {
+                    "job_location": "extracted job location or None",
+                    "company": "extracted company name or None",
+                    "description": "brief job description/title or None"
+                }"""
+                
+                job_info = self.generate_text(
+                    prompt=user_input,
+                    system_prompt=extract_system_prompt,
+                    model=self.config["model"]
+                )
+                
+                return {
+                    "action": action_type,
+                    "parameters": eval(job_info)
+                }
+
+            else:
+                return {
+                    "action": "show_default_msg",
+                    "parameters": {}
+                }
+
+        except Exception as e:
+            raise OpenAIAPIError(f"Input parsing failed: {e}")
+
+    def find_jobs(self, search_query: str, location: str = None, job_type: str = None, **kwargs) -> str:
+        """Search for jobs based on user criteria"""
+        try:
+            location_str = f" in {location}" if location else ""
+            type_str = f" {job_type}" if job_type else ""
+            
+            system_prompt = """You are a job search assistant. Search for real jobs and provide a concise list of 5 relevant positions.
+            For each job include:
+            1. Job ID (generate a unique identifier)
+            2. Company name
+            3. Job title
+            4. Location
+            5. Brief description (2-3 lines)
+            Format the response in a clear, readable way."""
+
+            search_prompt = f"Find{type_str} jobs matching '{search_query}'{location_str}. Provide real, current job listings."
+            
+            return self.generate_text(
+                prompt=search_prompt,
+                system_prompt=system_prompt,
+                model=self.config["model"]
+            )
+        except Exception as e:
+            raise OpenAIAPIError(f"Job search failed: {e}")
+
+    def view_job(self, description: str, company: str, **kwargs) -> str:
+        """Fetch detailed information about a specific job"""
+        try:
+            system_prompt = """You are a job search assistant. Provide detailed information about the specified job.
+            Include:
+            1. Full job description
+            2. Required qualifications
+            3. Benefits and perks
+            4. Company information
+            5. Work culture and environment
+            Format the response in a clear, structured way."""
+
+            search_prompt = f"Show detailed information for job with the following description at {company}: {description}."
+            
+            return self.generate_text(
+                prompt=search_prompt,
+                system_prompt=system_prompt,
+                model=self.config["model"]
+            )
+        except Exception as e:
+            raise OpenAIAPIError(f"Job view failed: {e}")
+
+    def apply_to_job(self, description: str, company: str, **kwargs) -> str:
+        """Get the application link for a specific job"""
+        try:
+            system_prompt = """You are a job search assistant. Provide the application process and link for the specified job.
+            Include:
+            1. Direct application link if available
+            2. Alternative application methods if direct link isn't available
+            3. Any specific application instructions
+            Be concise and practical."""
+
+            search_prompt = f"Get application information for job with the following description at {company}: {description}."
+            
+            return self.generate_text(
+                prompt=search_prompt,
+                system_prompt=system_prompt,
+                model=self.config["model"]
+            )
+        except Exception as e:
+            raise OpenAIAPIError(f"Job application retrieval failed: {e}")
+
+    def show_default_msg(self, **kwargs) -> str:
+        """Return a default message for invalid inputs"""
+        return """Here's what you can do:
+1. Search for jobs: "Find software developer jobs in New York"
+2. View job details: "Show me more about [job ID]"
+3. Get application link: "How do I apply for [job ID]"
+Please try again with one of these formats."""
+
     def perform_action(self, action_name: str, kwargs) -> Any:
         """Execute a Twitter action with validation"""
         if action_name not in self.actions:
