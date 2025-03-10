@@ -85,7 +85,7 @@ class OpenAIConnection(BaseConnection):
             "view-job": Action(
                 name="view-job",
                 parameters=[
-                    ActionParameter("job_id", True, str, "Unique identifier for the job"),
+                    ActionParameter("description", True, str, "Short description or title for the job"),
                     ActionParameter("company", True, str, "Company name")
                 ],
                 description="Fetch detailed information about a specific job"
@@ -93,7 +93,7 @@ class OpenAIConnection(BaseConnection):
             "apply-to-job": Action(
                 name="apply-to-job",
                 parameters=[
-                    ActionParameter("job_id", True, str, "Unique identifier for the job"),
+                    ActionParameter("description", True, str, "Short description or title for the job"),
                     ActionParameter("company", True, str, "Company name")
                 ],
                 description="Get the application link for a specific job"
@@ -268,14 +268,14 @@ class OpenAIConnection(BaseConnection):
 
             elif action_type in ["view_job", "apply_to_job"]:
                 extract_system_prompt = """You are a job search assistant. From the user's input, extract:
-                1. Job Location (if mentioned)
+                1. Brief job description or title (if mentioned)
                 2. Company name (if mentioned)
-                3. Brief job description or title (if mentioned)
+                3. Job Location (if mentioned)
                 Return a JSON object with these fields:
                 {
-                    "job_location": "extracted job location or None",
+                    "description": "brief job description/title or None",
                     "company": "extracted company name or None",
-                    "description": "brief job description/title or None"
+                    "job_location": "extracted job location or None",
                 }"""
                 
                 job_info = self.generate_text(
